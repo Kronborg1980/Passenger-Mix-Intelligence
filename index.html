@@ -142,7 +142,7 @@ if(!total)throw Error('Ingen gyldige passagerregistreringer.');
 const capped=limitNoted||total>=150000;
 for(const item of months.values()){
 item.rows=Array.from(item.countMap,([k,n])=>[...JSON.parse(k),n]);delete item.countMap;
-const firstBoundary=capped&&item.start.slice(0,7)===first.slice(0,7)&&+first.slice(8)>1;
+const firstBoundary=capped&&item.start.slice(0,7)===first.slice(0,7)&&+first.slice(8)>7;
 const maxDay=new Date(Date.UTC(+last.slice(0,4),+last.slice(5,7),0)).getUTCDate();
 const lastBoundary=capped&&item.end.slice(0,7)===last.slice(0,7)&&+last.slice(8)<maxDay;
 item.partial=firstBoundary||lastBoundary;item.filename=file.name;item.seq=++FILE_SEQ;
