@@ -162,7 +162,7 @@ function flash(t){const e=el('toast');e.textContent=t;e.classList.add('on');clea
 async function loadFiles(list){
 const files=Array.from(list||[]).filter(f=>/\.(xlsx|xls|csv)$/i.test(f.name));
 if(!files.length){flash('Vælg en Excel- eller CSV-fil');return}
-const hadData=R.length>0,failed=[],loaded=[];el('sourceBadge').textContent='Indlæser '+files.length+' fil(er)…';
+const hadData=R.length>0,previousYears=years(),failed=[],loaded=[];el('sourceBadge').textContent='Indlæser '+files.length+' fil(er)…';
 el('dropzone').classList.add('source-loading');
 for(const file of files){
 try{
@@ -173,7 +173,7 @@ loaded.push(file.name+' ('+fmt(parsed.total)+')');
 }catch(err){failed.push(file.name+': '+err.message)}
 }
 el('dropzone').classList.remove('source-loading');
-rebuildRows();init(hadData);
+rebuildRows();const newYearAdded=years().some(y=>!previousYears.includes(y));init(hadData&&!newYearAdded);
 if(loaded.length)flash(loaded.length+' fil(er) indlæst · '+fmt(count(R))+' registreringer i alt');
 if(failed.length){el('warning').textContent=failed.join(' · ');flash('Fejl i '+failed.length+' fil(er) – se beskeden på siden')}
 }
