@@ -36,22 +36,23 @@ function rebuildRows(){R=[];for(let item of MONTH_STORE.values())R.push(...item.
 function init(preserve=false){
 let ys=years();if(!ys.length)ys=[new Date().getFullYear(),new Date().getFullYear()-1];
 const current={yearA:el('yearA').value,yearB:el('yearB').value,monthA:el('monthA').value,monthB:el('monthB').value};
-selectSet('yearA',ys.map(x=>[x,x]));selectSet('yearB',ys.map(x=>[x,x]));
+selectSet('yearA',ys.map(x=>[x,x]));selectSet('yearB',[['','Vælg sammenligningsår'],...ys.map(x=>[x,x])]);
 selectSet('monthA',M.map((m,i)=>[i,m]));selectSet('monthB',M.map((m,i)=>[i,m]));
 if(!preserve||!R.length){let max=ys[0],older=ys[1]??max;
-el('yearA').value=String(max);el('yearB').value=String(older);
-let full=commonMonths(max,older),all=commonMonths(max,older,true),m=full.at(-1)||all.at(-1)||coverage(max).at(-1)||13;
+el('yearA').value=String(max);el('yearB').value=ys.length>1?String(older):'';
+let full=ys.length>1?commonMonths(max,older):[],all=ys.length>1?commonMonths(max,older,true):[],m=full.at(-1)||all.at(-1)||(ys.length===1?coverage(max).at(-1):13)||13;
 el('monthA').value=String(m);el('monthB').value=String(m);
-}else{for(const id of Object.keys(current)){const v=current[id];if([...el(id).options].some(o=>o.value===v))el(id).value=v}}
+}else{for(const id of Object.keys(current)){const v=current[id];if([...el(id).options].some(o=>o.value===v))el(id).value=v}if(!current.yearB&&ys.length>1){el('yearB').value=String(ys.find(y=>String(y)!==el('yearA').value)||ys[1]);el('monthB').value=el('monthA').value}}
 for(let field of ['nation','country','category','age','from','to','status','guesttype','rowtype','gender','group']){
 let vals=[...new Set(R.map(r=>String(r[IDX[field]]??'')))].sort((a,b)=>a.localeCompare(b));
-selectSet(field,vals.map(v=>[v,show(field,v)]),true)}
+if(field==='status')selectSet(field,[['__EXCLUDE_NSH__','Uden no-show (NSH)'],...vals.filter(v=>v).map(v=>[v,v==='NSH'?'Kun no-show (NSH)':show(field,v)])],true);
+else selectSet(field,vals.map(v=>[v,show(field,v)]),true)}
 selectSet('dimension',Object.entries(names).map(([v,l])=>[v,l]));
 if(!preserve)el('dimension').value='country';
 el('emptyState').style.display=R.length?'none':'block';
 document.querySelector('main').classList.toggle('ready',!!R.length);
 el('dropzone').classList.toggle('compact',!!R.length);renderSources();render();}
-function matched(r){return ['nation','country','category','age','from','to','status','guesttype','rowtype','gender','group'].every(k=>!el(k).value||r[IDX[k]]===el(k).value)}
+function matched(r){return ['nation','country','category','age','from','to','status','guesttype','rowtype','gender','group'].every(k=>{const value=el(k).value;if(!value)return true;if(k==='status'&&value==='__EXCLUDE_NSH__')return r[IDX.status]!=='NSH';return r[IDX[k]]===value})}
 function analyse(){const filtered=R.filter(matched),ya=el('yearA').value,yb=el('yearB').value,ma=selectedMonths(ya,el('monthA').value,yb),mb=selectedMonths(yb,el('monthB').value,ya);
 let sa=new Set(ma),sb=new Set(mb);const matches=(r,y,ms)=>r[IDX.date].slice(0,4)===String(y)&&ms.has(+r[IDX.date].slice(5,7));
 const a=filtered.filter(r=>matches(r,ya,sa)),b=filtered.filter(r=>matches(r,yb,sb));
@@ -67,7 +68,7 @@ const modeMismatch=(monthA===0||monthA===13||monthB===0||monthB===13)&&monthA!==
 const comparable=validA&&validB&&!modeMismatch&&((monthA!==0&&monthB!==0)||sameCoverage(ma,mb));
 const truncated=[...ma.map(m=>MONTH_STORE.get(ymKey(yearA,m))),...mb.map(m=>MONTH_STORE.get(ymKey(yearB,m)))].filter(x=>x?.partial);
 const provisional=comparable&&truncated.length>0;
-el('nameA').textContent='A · '+M[monthA]+' '+yearA;el('nameB').textContent='B · '+M[monthB]+' '+yearB;
+el('nameA').textContent='A · '+M[monthA]+' '+yearA;el('nameB').textContent='B · '+M[monthB]+' '+(el('yearB').value||'vælg år');
 el('totalA').textContent=validA?fmt(ta):'—';el('totalB').textContent=validB?fmt(tb):'—';
 el('delta').textContent=comparable?(ta-tb>0?'+':'')+fmt(ta-tb):'—';
 el('deltaPct').textContent=comparable&&tb?pct((ta-tb)/tb*100):'—';
@@ -98,7 +99,7 @@ let depRows=[...per].sort((x,y)=>y[1]-x[1]).slice(0,200).map(([k,v])=>[...k.spli
 el('departures').innerHTML=table(['Dato','Fra','Til','Afgangskode','Pax'],depRows);
 const notes=[];
 if(!validA)notes.push('Periode A har ingen indlæste data.');
-if(!validB)notes.push('Periode B har ingen indlæste data.');
+if(!validB)notes.push(!el('yearB').value?'Indlæs eller vælg et andet år for at sammenligne.':'Periode B har ingen indlæste data.');
 if(validA&&validB&&!comparable)notes.push('Perioderne dækker forskellige måneder – vælg "Fælles måneder (YTD)" i begge felter for en retvisende årssammenligning.');
 if(provisional)notes.push('Foreløbig sammenligning: mindst én udvalgt måned stammer fra en muligvis afkortet Excel-eksport.');
 el('warning').textContent=notes.join(' ');
